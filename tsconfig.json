@@ -1,0 +1,26 @@
+{
+    "compileOnSave": true,
+    "compilerOptions": {
+        "target": "es2016",
+        "sourceMap": true,
+        "module": "es2015",
+        "strict": true,
+        "declaration": true,
+        "outDir": "./build",
+        "noUnusedLocals": false,
+        "noUnusedParameters": false,
+        "strictNullChecks": true,
+        "forceConsistentCasingInFileNames": true,
+        "noFallthroughCasesInSwitch": true,
+        "noImplicitReturns": true,
+        "noImplicitThis": true,
+        "noImplicitAny": true,
+        "checkJs": false,
+        "suppressImplicitAnyIndexErrors": true,
+        // "allowJs": true,
+        "types": []
+    },
+    "include": [
+        "lib/**/*"
+    ]
+}

@@ -1,0 +1,21 @@
+{
+    "env": {
+        "browser": true,
+        "es6": true
+    },
+    "parser": "@typescript-eslint/parser", // 配置ts解析器
+    "parserOptions": {
+        "project": "./tsconfig.json",
+        "tsconfigRootDir": "./",
+        "sourceType": "module"
+    },
+    "extends": [
+        "plugin:prettier/recommended"
+    ],
+    "plugins": [
+        "prettier"
+    ],
+    "rules": {
+        "prettier/prettier": 2
+    }
+}
