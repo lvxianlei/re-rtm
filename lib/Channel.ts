@@ -113,6 +113,7 @@ export default class Channel {
             }
         })
     }
+
     on(eventName: string, listener: Listener) {
         this.request?.on(eventName, listener)
     }
