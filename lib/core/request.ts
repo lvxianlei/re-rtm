@@ -1,5 +1,4 @@
 import { EventEmitter } from "events"
-import { ConnectionState } from "../index"
 export interface MessageType {}
 export enum SoketKey {
     LOGIN = "LoginAck",
@@ -106,6 +105,7 @@ export default class Request extends EventEmitter {
 
             function onerror(event: any): void {
                 console.log("error:", event)
+                reject(event)
             }
 
             that.socket!.onopen = onopen

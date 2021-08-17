@@ -1,17 +1,23 @@
-import Request, { SoketKey } from "./core/request"
+import Socket, { SoketKey, SocketProps } from "./core/Socket"
 import Channel from "./Channel"
+import { Listener } from "events"
 import LocalInvitation from "./LocalInvitation"
 import { BaseURL, protocols } from "./config"
 import { get_msg_id } from "./RtmUtil"
-import {
-    RtmConfig,
-    MESSAGE_TYPE,
-    RtmMessage,
-    RtmFileMessage,
-    RtmImageMessage,
-    RtmTextMessage,
-    RtmRawMessage
-} from "./index"
+import { RtmTextMessage, RtmMessage, MESSAGE_TYPE, RtmRawMessage } from "./RtmMessage"
+export type LogFilterType = {
+    error: boolean
+    warn: boolean
+    info: boolean
+    track: boolean
+    debug: boolean
+}
+
+export interface RtmConfig {
+    enableCloudProxy?: undefined | false | true
+    enableLogUpload?: boolean
+    logFilter?: LogFilterType
+}
 
 export interface login {
     uid: string
@@ -66,7 +72,7 @@ export interface MediaTransferHandler {
     onOperationProgress?: () => {}
 }
 
-export default class RTMClient extends Request {
+export default class RTMClient {
     private readonly context: Context = {
         appId: "",
         uid: "",
@@ -79,13 +85,13 @@ export default class RTMClient extends Request {
             logFilter: { error: false, warn: false, info: false, track: false, debug: false }
         }
     }
-
+    private test_request: SocketProps | null = null
     constructor(appId: string, config: RtmConfig) {
-        super(BaseURL, protocols)
+        // super(BaseURL, protocols)
+        this.test_request = Socket(BaseURL, protocols)
         this.context.appId = appId
         this.context.requestId = ++this.context.requestId
         this.context.config = config
-        this.context.connectionState = super.socket?.readyState || 0
     }
 
     login(option: login): Promise<void> {
@@ -93,8 +99,8 @@ export default class RTMClient extends Request {
             this.context.uid = option.uid
             this.context.token = option.token
             try {
-                await this.open({ request_id: this.context.requestId })
-                await this.send({
+                await this.test_request?.open({ request_id: this.context.requestId })
+                await this.test_request?.send({
                     name: SoketKey.LOGIN,
                     message: {
                         uri: "LoginReq",
@@ -161,7 +167,7 @@ export default class RTMClient extends Request {
             }
 
             try {
-                const result = await this.send({
+                const result = await this.test_request?.send({
                     name: SoketKey.SEND_MESSAGE,
                     message: {
                         uri: "SendMessageReq",
@@ -186,7 +192,7 @@ export default class RTMClient extends Request {
     queryPeersOnlineStatus(peerIds: string[]): Promise<any> {
         return new Promise(async (resove, reject) => {
             try {
-                const result = await this.send({
+                const result = await this.test_request?.send({
                     name: SoketKey.QUERYPEERS_ONLINE_STATUS,
                     message: {
                         uri: "GetOnlineStatusReq",
@@ -205,7 +211,7 @@ export default class RTMClient extends Request {
     subscribePeersOnlineStatus(peerIds: string[]): Promise<void> {
         return new Promise(async (resove, reject) => {
             try {
-                await this.send({
+                await this.test_request?.send({
                     name: SoketKey.SUBSCRIBE_ONLINE_STATUS,
                     message: {
                         uri: "SubscribeOnlineStatusReq",
@@ -223,7 +229,7 @@ export default class RTMClient extends Request {
     unsubscribePeersOnlineStatus(peerIds: string[]): Promise<void> {
         return new Promise(async (resove, reject) => {
             try {
-                await this.send({
+                await this.test_request?.send({
                     name: SoketKey.UNSUBSCRIBE_ONLINE_STATUS,
                     message: {
                         uri: "UnSubscribeOnlineStatusReq",
@@ -242,7 +248,7 @@ export default class RTMClient extends Request {
     queryPeersBySubscriptionOption(option: PeerSubscriptionOption): Promise<any> {
         return new Promise(async (resove, reject) => {
             try {
-                const result = await this.send({
+                const result = await this.test_request?.send({
                     name: SoketKey.GET_SUBSCRIBE_ONLINE_STATUS_UIDS,
                     message: {
                         uri: "GetSubscribeOnlineStatusUidsReq",
@@ -260,7 +266,7 @@ export default class RTMClient extends Request {
     setLocalUserAttributes(attributes: AttributesMap): Promise<void> {
         return new Promise(async (resove, reject) => {
             try {
-                await this.send({
+                await this.test_request?.send({
                     name: SoketKey.SET_USER_ATTRS,
                     message: {
                         uri: "SetUserAttrsReq",
@@ -278,7 +284,7 @@ export default class RTMClient extends Request {
     addOrUpdateLocalUserAttributes(attributes: AttributesMap): Promise<void> {
         return new Promise(async (resove, reject) => {
             try {
-                await this.send({
+                await this.test_request?.send({
                     name: SoketKey.SET_USER_ATTRS,
                     message: {
                         uri: "SetUserAttrsReq",
@@ -296,7 +302,7 @@ export default class RTMClient extends Request {
     deleteLocalUserAttributesByKeys(attributeKeys: string[]): Promise<void> {
         return new Promise(async (resove, reject) => {
             try {
-                await this.send({
+                await this.test_request?.send({
                     name: SoketKey.DELETE_USER_ATTRS,
                     message: {
                         uri: "DelUserAttrsReq",
@@ -314,7 +320,7 @@ export default class RTMClient extends Request {
     clearLocalUserAttributes(): Promise<void> {
         return new Promise(async (resove, reject) => {
             try {
-                await this.send({
+                await this.test_request?.send({
                     name: SoketKey.CLEAR_LOCAL_USER_ATTRS,
                     message: {
                         uri: "DelUserAllAttrsReq",
@@ -332,7 +338,7 @@ export default class RTMClient extends Request {
     getUserAttributes(userId: string): Promise<any> {
         return new Promise(async (resove, reject) => {
             try {
-                const result: any = await this.send({
+                const result: any = await this.test_request?.send({
                     name: SoketKey.GET_USER_ATTRIBUTES,
                     message: {
                         uri: "GetUserAttrsReq",
@@ -351,7 +357,7 @@ export default class RTMClient extends Request {
         return new Promise(async (resove, reject) => {
             try {
                 let attrs: AttributesMap = {}
-                const result: any = await this.send({
+                const result: any = await this.test_request?.send({
                     name: SoketKey.GET_USER_ATTRIBUTES,
                     message: {
                         uri: "GetUserAttrsReq",
@@ -377,7 +383,7 @@ export default class RTMClient extends Request {
     ): Promise<void> {
         return new Promise(async (resove, reject) => {
             try {
-                await this.send({
+                await this.test_request?.send({
                     name: SoketKey.SET_CHANNEL_ATTRS,
                     message: {
                         uri: "SetChannelAttrsReq",
@@ -403,7 +409,7 @@ export default class RTMClient extends Request {
     ): Promise<void> {
         return new Promise(async (resove, reject) => {
             try {
-                await this.send({
+                await this.test_request?.send({
                     name: SoketKey.SET_CHANNEL_ATTRS,
                     message: {
                         uri: "SetChannelAttrsReq",
@@ -429,7 +435,7 @@ export default class RTMClient extends Request {
     ): Promise<void> {
         return new Promise(async (resove, reject) => {
             try {
-                await this.send({
+                await this.test_request?.send({
                     name: SoketKey.DELETE_CHANNEL_ATTRIBUTES,
                     message: {
                         uri: "DelChannelAttrsReq",
@@ -454,7 +460,7 @@ export default class RTMClient extends Request {
     ): Promise<void> {
         return new Promise(async (resove, reject) => {
             try {
-                await this.send({
+                await this.test_request?.send({
                     name: SoketKey.CLEAR_CHANNEL_ATTRIBUTES,
                     message: {
                         uri: "DelChannelAllAttrsReq",
@@ -473,7 +479,7 @@ export default class RTMClient extends Request {
     getChannelAttributes(channelId: string): Promise<ChannelAttributes> {
         return new Promise(async (resove, reject) => {
             try {
-                const result: any = await this.send({
+                const result: any = await this.test_request?.send({
                     name: SoketKey.GET_CHANNEL_ATTRIBUTES,
                     message: {
                         uri: "GetChannelAttrsReq",
@@ -500,7 +506,7 @@ export default class RTMClient extends Request {
     getChannelAttributesByKeys(channelId: string, keys: string[]): Promise<ChannelAttributes> {
         return new Promise(async (resove, reject) => {
             try {
-                const result: any = await this.send({
+                const result: any = await this.test_request?.send({
                     name: SoketKey.GET_CHANNEL_ATTRIBUTES,
                     message: {
                         uri: "GetChannelAttrsReq",
@@ -536,7 +542,7 @@ export default class RTMClient extends Request {
                 //     request_id: number,
                 //     uri: SoketKey.GET_CHANNEL_MEMBERS_COUNTS
                 // }
-                const result: any = await this.send({
+                const result: any = await this.test_request?.send({
                     name: SoketKey.GET_CHANNEL_MEMBERS_COUNTS,
                     message: {
                         uri: "GetChannelMemberCountsReq",
@@ -631,11 +637,15 @@ export default class RTMClient extends Request {
 
     //频道
     createChannel(channelId: string): Channel {
-        return new Channel(channelId, { context: this.context, send: this.send.bind(this) })
+        return new Channel(channelId, { context: this.context, request: this.test_request })
     }
 
     //语音
     createLocalInvitation(): LocalInvitation {
         return new LocalInvitation()
+    }
+
+    on(eventName: string, listener: Listener) {
+        this.test_request?.on(eventName, listener)
     }
 }

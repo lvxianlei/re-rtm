@@ -1,17 +1,17 @@
-import { EventEmitter } from "events"
-import RTMClient, { Context, SendMessageOptions } from "./RTMClient"
-import { SendOption, SoketKey } from "./core/request"
-import { RtmMessage } from "./index"
+import { Listener } from "events"
+import { Context, SendMessageOptions } from "./RTMClient"
+import { SoketKey, SocketProps } from "./core/Socket"
+import { RtmMessage } from "./RtmMessage"
 interface ChannelContext extends Context {
     channelId: string
 }
 
 interface PreviteRtmProps {
     context: Context
-    send: (option: SendOption) => Promise<any>
+    request: SocketProps | null
 }
 
-export default class Channel extends EventEmitter {
+export default class Channel {
     private readonly context: ChannelContext = {
         appId: "",
         channelId: "",
@@ -26,18 +26,17 @@ export default class Channel extends EventEmitter {
         }
     }
 
-    private send: (option: SendOption) => Promise<any> = () => new Promise((resove, reject) => {})
+    private request: SocketProps | null
 
     constructor(channelId: string, option: PreviteRtmProps) {
-        super()
         this.context = { ...option.context, channelId }
-        this.send = option.send.bind(RTMClient)
+        this.request = option.request
     }
 
     getMembers(): Promise<string[]> {
         return new Promise(async (resove, reject) => {
             try {
-                const result = await this.send({
+                const result: any = await this.request?.send({
                     name: SoketKey.GET_CHANNEL_MEMBERS,
                     message: {
                         uri: "GetChannelMembersReq",
@@ -55,7 +54,7 @@ export default class Channel extends EventEmitter {
     join(): Promise<void> {
         return new Promise(async (resove, reject) => {
             try {
-                await this.send({
+                await this.request?.send({
                     name: SoketKey.JOIN_CHANNEL,
                     message: {
                         uri: "JoinChannelReq",
@@ -73,7 +72,7 @@ export default class Channel extends EventEmitter {
     leave(): Promise<void> {
         return new Promise(async (resove, reject) => {
             try {
-                await this.send({
+                await this.request?.send({
                     name: SoketKey.LEAVE_CHANNEL,
                     message: {
                         uri: "LeaveChannelReq",
@@ -98,7 +97,7 @@ export default class Channel extends EventEmitter {
     ): Promise<void> {
         return new Promise(async (resove, reject) => {
             try {
-                await this.send({
+                await this.request?.send({
                     name: SoketKey.SEND_CHANNEL_MESSAGE,
                     message: {
                         uri: "SendChannelMessageReq",
@@ -113,5 +112,8 @@ export default class Channel extends EventEmitter {
                 reject(error)
             }
         })
+    }
+    on(eventName: string, listener: Listener) {
+        this.request?.on(eventName, listener)
     }
 }
